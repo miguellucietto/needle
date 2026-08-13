@@ -2,6 +2,8 @@
 #define shared_H_
 
 #include <stdbool.h>
+#include <stdio.h>
+
 
 
 char *strdup(const char *);

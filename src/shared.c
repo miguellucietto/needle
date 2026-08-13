@@ -6,6 +6,11 @@
 #include "shared.h"
 
 
+
+
+
+
+
 static bool Flags[256];
 
 
@@ -56,12 +61,13 @@ int warn_invalid_flags(const char *rflags) {
     
   }
   nflags[count] = '\0';
-  
-  fprintf(stderr, "[WARN] The flags ");
-  for (int i = 0; i < count; i++) {
-    fprintf(stderr, "'%c' ", nflags[i]);
+  if (nflags[0] != '\0') { 
+    fprintf(stderr, "[WARN] The flags ");
+    for (int i = 0; i < count; i++) {
+      fprintf(stderr, "'%c' ", nflags[i]);
+    }
+    fprintf(stderr, "are not real flags\n");
   }
-  fprintf(stderr, "are not real flags\n");
   return EXIT_SUCCESS;
 }
 

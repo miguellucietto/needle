@@ -1,0 +1,7 @@
+build/
+*.o
+*.d
+needle
+Makefile
+compile_commands.json
+.clangd
