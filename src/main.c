@@ -1,89 +1,37 @@
 #include <stdio.h>
 #include <stdlib.h>
-#include <string.h>
-#include <errno.h>
-#include <unistd.h>
 
-#include <log.h>
-
-#include "find.h"
-#include "shared.h"
+#include "color.h"
 #include "search.h"
+#include "shared.h"
 
+int main(int argc, char **argv)
+{
+    Arguments arguments = {
+        .paths = argv,
+    };
 
-#define FLAGS (const char *) "r n f"
-
-
-/*****************Flags*****************/
-
-/* -n */ bool show_lines = false;   // Show the line numbers
-/* -r */ bool recursive  = false;  // TODO: Search for the entire directory recursively and try to find the needle in every single file
-/* -f */ bool only_first = false; // Only show the first line with the found needle
-
-/***************************************/
-
-
-void update_flags(int c, char **a) {
-  get_flags(c, a);
-
-  show_lines = has_flag('n');
-  recursive = has_flag('r');
-}
-
-
-int main(int argc, char **argv) {
-  if (argc < 3) {
-    WARN("needle needs at least 2 arguments");
-    return EXIT_SUCCESS;
-  }
-  update_flags(argc, argv);
-  char *needle = argv[1];
-
-  if (recursive) {
-    int res = rec_search(".", needle);
-    warn_invalid_flags(FLAGS);
-    return res;
-  }
-
-
-  char **file_paths = &argv[2];
-
-  for (int i = 0; i < argc - 2; i++) {
-    if (is_flag(file_paths[i])) continue;
-
-    char *path = file_paths[i];
-
-    FILE *f = fopen(path, "r");
-    if (!f) {
-      ERROR("Could not open file '%s': %s", path, strerror(errno));
-      return EXIT_FAILURE;
+    const int parse_status = parse_arguments(argc, argv, &arguments);
+    if (parse_status > 0) {
+        print_usage(argv[0]);
+        return EXIT_SUCCESS;
+    }
+    if (parse_status < 0) {
+        fprintf(stderr, "Try '%s --help' for usage.\n", argv[0]);
+        return 2;
     }
 
-    char **lines = get_file_lines(f);
-    if (!lines)
-      return 1;
-    printf("----------------------------------------------------");
-    printf("\n%s: \n\n", path);
+    color_init(arguments.color);
 
-    for (int i = 0; lines[i] != NULL; i++) {
-      if (find_in(needle, lines[i]) != EXIT_SUCCESS)
-        continue;
-
-
-      if (!show_lines) {
-	printf("    %s\n", lines[i]);
-      } else {
-	printf("%d    %s\n", i + 1, lines[i]);
-      }
-
-      if (only_first) exit(0);
-
+    SearchStats stats = {0};
+    for (size_t index = 0;
+         index < arguments.path_count && !stats.stopped;
+         ++index) {
+        search_path(arguments.paths[index], &arguments.search, &stats);
     }
 
-    fclose(f);
-  }
-
-
-  warn_invalid_flags(FLAGS);
-  return 0;
+    if (stats.errors > 0) {
+        return 2;
+    }
+    return stats.matches > 0 ? EXIT_SUCCESS : EXIT_FAILURE;
 }

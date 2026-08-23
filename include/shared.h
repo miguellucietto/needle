@@ -1,18 +1,19 @@
-#ifndef shared_H_
-#define shared_H_
+#ifndef NEEDLE_SHARED_H
+#define NEEDLE_SHARED_H
 
-#include <stdbool.h>
-#include <stdio.h>
+#include <stddef.h>
 
+#include "color.h"
+#include "search.h"
 
+typedef struct Arguments {
+    SearchOptions search;
+    ColorMode color;
+    char **paths;
+    size_t path_count;
+} Arguments;
 
-char *strdup(const char *);
+int parse_arguments(int argc, char **argv, Arguments *arguments);
+void print_usage(const char *program);
 
-
-int get_flags(int argc, char ** argv);
-bool has_flag(char);
-bool is_flag(const char *);
-int warn_invalid_flags(const char *);
-
-
-#endif /* shared_H_ */
+#endif

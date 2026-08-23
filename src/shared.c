@@ -1,84 +1,97 @@
 #include <stdio.h>
-#include <stdlib.h>
 #include <string.h>
-#include <stdbool.h>
-#include <log.h>
+
 #include "shared.h"
 
-
-
-static bool Flags[256];
-
-
-int get_flags(int argc, char **argv){
-  if (!argv || !*argv)
-    return EXIT_FAILURE;
-
-  
-  for (int i = 0; i < argc; i++) {
-    if (argv[i][0] == '-') {
-      for (int j = 1; argv[i][j] != '\0'; j++) {
-	Flags[(unsigned char) argv[i][j]] = true;
-      }
+static int parse_color(const char *value, ColorMode *mode)
+{
+    if (strcmp(value, "auto") == 0) {
+        *mode = COLOR_AUTO;
+    } else if (strcmp(value, "always") == 0) {
+        *mode = COLOR_ALWAYS;
+    } else if (strcmp(value, "never") == 0) {
+        *mode = COLOR_NEVER;
+    } else {
+        fprintf(stderr, "needle: invalid color mode: %s\n", value);
+        return -1;
     }
-  }
-  
-  return EXIT_SUCCESS;
+    return 0;
 }
 
-bool is_flag(const char *arg) {
-  if (!arg) return false;
+int parse_arguments(int argc, char **argv, Arguments *arguments)
+{
+    bool options_enabled = true;
+    char **paths = arguments->paths;
 
-  return arg[0] == '-';
+    *arguments = (Arguments){
+        .color = COLOR_AUTO,
+        .paths = paths,
+    };
+
+    for (int index = 1; index < argc; ++index) {
+        char *argument = argv[index];
+
+        if (options_enabled && strcmp(argument, "--") == 0) {
+            options_enabled = false;
+            continue;
+        }
+        if (options_enabled && strncmp(argument, "--color=", 8) == 0) {
+            if (parse_color(argument + 8, &arguments->color) != 0) {
+                return -1;
+            }
+            continue;
+        }
+        if (options_enabled && strcmp(argument, "--help") == 0) {
+            return 1;
+        }
+        if (options_enabled && argument[0] == '-' && argument[1] != '\0') {
+            for (size_t flag = 1; argument[flag] != '\0'; ++flag) {
+                switch (argument[flag]) {
+                case 'n': arguments->search.show_line_numbers = true; break;
+                case 'r': arguments->search.recursive = true; break;
+                case 'f': arguments->search.first_match = true; break;
+                case 'h': return 1;
+                default:
+                    fprintf(stderr, "needle: unknown option: -%c\n",
+                            argument[flag]);
+                    return -1;
+                }
+            }
+            continue;
+        }
+
+        if (arguments->search.pattern == NULL) {
+            arguments->search.pattern = argument;
+        } else {
+            arguments->paths[arguments->path_count++] = argument;
+        }
+    }
+
+    if (arguments->search.pattern == NULL ||
+        arguments->search.pattern[0] == '\0') {
+        fprintf(stderr, "needle: a non-empty search pattern is required\n");
+        return -1;
+    }
+    if (arguments->path_count == 0) {
+        if (arguments->search.recursive) {
+            arguments->paths[arguments->path_count++] = ".";
+        } else {
+            fprintf(stderr, "needle: at least one file is required\n");
+            return -1;
+        }
+    }
+    return 0;
 }
 
-bool has_flag(char f) {
-  return Flags[(unsigned char) f];
-}
-
-
-int warn_invalid_flags(const char *rflags) {
-  if (!rflags) return EXIT_FAILURE;
-  char nflags[256];
-  int count = 0;
-
-
-  for (int i = 0; i < (int) sizeof(Flags); i++) {
-    if (!Flags[i])
-      continue;
-
-    bool allowed = false;
-    for (int j = 0; rflags[j] != '\0'; j++) {
-      if (i == rflags[j]) allowed = true;
-    }
-    if (!allowed) {
-      nflags[count++] = (unsigned char) i;
-    }
-    
-  }
-  nflags[count] = '\0';
-  if (nflags[0] != '\0') { 
-    fprintf(stderr, "[WARN] The flags ");
-    for (int i = 0; i < count; i++) {
-      fprintf(stderr, "'%c' ", nflags[i]);
-    }
-    fprintf(stderr, "are not real flags\n");
-  }
-  return EXIT_SUCCESS;
-}
-
-
-
-char *strdup(const char *text) {
-  if (!text) {
-    return NULL;
-  }
-
-  int len = strlen(text) + 1;
-  char *copy = malloc(len);
-
-  memcpy(copy, text, len);
-  copy[len] = '\0';
-
-  return copy;
+void print_usage(const char *program)
+{
+    printf("Usage: %s [options] pattern [path ...]\n\n", program);
+    puts("Search for a literal string in files.\n");
+    puts("Options:");
+    puts("  -n              show line numbers");
+    puts("  -r              search directories recursively");
+    puts("  -f              stop after the first match");
+    puts("  -h, --help      show this help");
+    puts("  --color=WHEN    colorize: auto, always, or never");
+    puts("\nNO_COLOR disables ANSI colors in every mode.");
 }
