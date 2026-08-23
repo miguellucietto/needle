@@ -3,6 +3,7 @@
 
 
 
+int rec_search(const char *path, const char *needle);
 
 
 

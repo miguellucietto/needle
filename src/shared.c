@@ -7,10 +7,6 @@
 
 
 
-
-
-
-
 static bool Flags[256];
 
 
@@ -47,7 +43,7 @@ int warn_invalid_flags(const char *rflags) {
   int count = 0;
 
 
-  for (int i = 0; i < sizeof(Flags); i++) {
+  for (int i = 0; i < (int) sizeof(Flags); i++) {
     if (!Flags[i])
       continue;
 

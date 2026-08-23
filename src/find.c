@@ -52,14 +52,14 @@ static char *get_entire_file(FILE *f) {
   }
 
   content[count] = '\0';
-  
+
   return content;
 }
 
 char **get_file_lines(FILE *f) {
   if (!f)
     return NULL;
-  
+
   size_t count = 0, cap = 128;
   char *fcontent = get_entire_file(f);
   if (!fcontent) {
@@ -71,9 +71,9 @@ char **get_file_lines(FILE *f) {
     free(fcontent);
     return NULL;
   }
-  
+
   char *line = strtok(fcontent, "\n");
-  
+
   do {
     if (count + 1 >= cap) {
       char **tmp = realloc(lines, sizeof(char *) * (cap * 2));
@@ -84,11 +84,11 @@ char **get_file_lines(FILE *f) {
 	return NULL;
       }
       lines = tmp;
-      cap *= 2; 
+      cap *= 2;
     }
     lines[count++] = line;
   } while ((line = strtok(NULL, "\n")) != NULL);
-  
+
   if (count + 1 >= cap) {
     char **tmp = realloc(lines, sizeof(char *) * (cap + 1));
     if (!tmp) {
@@ -98,20 +98,21 @@ char **get_file_lines(FILE *f) {
     }
     cap += 1;
     lines = tmp;
-    
+
   }
   return lines;
 }
-  
+
+
 int find_in(const char *needle, const char *haystack) {
   if (!needle || !haystack) {
-      return EXIT_FAILURE;
-    }
-    
-    char *found = strstr(haystack, needle);
-
-    if (!found) {
-      return EXIT_FAILURE;
-    }
-    return EXIT_SUCCESS;
+    return EXIT_FAILURE;
   }
+
+  char *found = strstr(haystack, needle);
+
+  if (!found) {
+    return EXIT_FAILURE;
+  }
+  return EXIT_SUCCESS;
+}
